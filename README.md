@@ -175,3 +175,5 @@ URxvt*color15 : #EEEEEC
 pacman -S networkmanager network-manager-applet networkmanager-{openconnect,openvpn,pptp,vpnc} dnsmasq modemmanager dhclient
 pacman -S gnome-keyring
 systemctl enable NetworkManager.service
+```
+
