@@ -177,3 +177,59 @@ pacman -S gnome-keyring
 systemctl enable NetworkManager.service
 ```
 
+# Expanding your Disk
+If you need to expand your disk later on, there's a few steps required.
+
+## Extend your Physical Partition
+First, you'll need to grow the physical partition your LV sits on. Use whatever tools you'd normally use; `gparted` is a nice easy one for this.
+
+After resizing, confirm with:
+```bash
+sudo pvs
+```
+
+You should see some free space listed here.
+
+## Extend your LV
+Exten your Logical Volume, keeping some free space for snapshots. 
+
+```bash
+sudo lvextend -l+75%FREE /dev/cryptoroot/root
+```
+
+## Extend your Crypt and Filesystem
+Inside of the LVM, you'll need to expand the LUKS crypt, and then the filesystem.
+
+```bash
+sudo cryptsetup luksOpen /dev/cryptoroot/root root
+sudo cryptsetup resize root
+sudo e2fsck -f /dev/mapper/root
+sudo resize2fs -p /dev/mapper/root
+```
+
+# Creating Snapshots
+The following are a series of commands to display snapshot creation and management of your LV. Keep in mind, as this is LUKS inside the LV, it's a snapshot of a LUKS volume (rather than LV in LUKS, where the snapshot is of your files).
+
+```bash
+# Create a 1GB snapshot
+sudo lvcreate  -L 1GB -s -n my-snapshot /dev/cryptoroot/root
+# Make sure it displays in a list of volumes
+sudo lvs
+# See details info on it
+sudo lvdisplay my-snapshot
+# Extend it to accomodate more than 1GB of changes
+sudo lvextend -L +1GB /dev/cryptoroot/my-snapshot
+```
+
+## Restoring and Merging
+
+To restore or merge, unmount any mounted snapshots, and close your LUKS volumes off.
+
+```bash
+# Merges snapshot over the top of current
+sudo lvconvert --merge /dev/cryptoroot/my-snapshot
+# If you tried to merge, and it was busy, deactivate and reactivate the LV after unmounting etc
+sudo lvchange -an /dev/cryptoroot/root
+sudo lvchange -ay /dev/cryptoroot/root
+```
+
