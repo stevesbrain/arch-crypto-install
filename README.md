@@ -1,3 +1,7 @@
+# Initial Install
+
+## Partitioning
+
 *  Use of cgdisk / cfdisk / whatever to partition GPT disk as follows:    (https://wiki.archlinux.org/index.php/Dm-crypt/Encrypting_an_entire_system#LUKS_on_LVM)
 ```
   - 1MB or so of free space (irrelevant really - more for disk alignment than anything else)
@@ -5,6 +9,8 @@
   - 250MB of ext4 for /boot
   - Remaining space for LVM group which will contain swap and crypto root
 ```
+
+## LVM Creation
 
 *  Create your LVM    (https://wiki.archlinux.org/index.php/Dm-crypt/Encrypting_an_entire_system#LUKS_on_LVM)
 ```bash
@@ -14,6 +20,8 @@ lvm lvcreate -L 500M -n swap GROUPNAME
 lvm lvcreate -l 100%FREE -n root GROUPNAME
 ```
 
+## FDE Creation
+
 *  Set up crypt on root now, and give it an fs
 ```
 cryptsetup luksFormat -c aes-xts-plain64 -s 512 /dev/mapper/GROUPNAME-root
@@ -21,6 +29,8 @@ crypsetup open --type luks /dev/mapper/GROUPNAME-root root
 mkfs -t ext4 /dev/mapper/root
 mount /dev/mapper/root /mnt
 ```
+
+## Installing System Files
 
 *  Make a /mnt/boot folder now, and mount /dev/sda2 to it (with an ext4 partition)
 *  Make a /mnt/boot/efi folder, and mount /dev/sda1 to it (with a vfat partition as specified earlier)
@@ -33,6 +43,9 @@ mkinitcpio -p linux       (https://wiki.archlinux.org/index.php/Installation_gui
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=grub    (https://wiki.archlinux.org/index.php/GRUB#Installation_2)
 grub-mkconfig -o /boot/grub/grub.cfg  ("Failed to connect" warnings are fine here)  (https://wiki.archlinux.org/index.php/GRUB#Generate_the_main_configuration_file)
 ```
+
+## Encrypted Swap
+
 *  Encrypted swap is pretty simple. This will regenerate the encryption key for swap as entirely random each time. Edit your /etc/crypttab file to refer to swap by disk-id, or you'll potentially kill your root:
 ```bash
 > ls /dev/disk/by-id/* | grep swap    # mine showed as /dev/disk/by-id/dm-name-GROUPNAME-swap
