@@ -82,6 +82,40 @@ Generate the new CPIO: sudo mkinitcpio -p linux
 
 Generate the new GRUB: sudo grub-mkconfig -o /boot/grub/grub.cfg
 
+# 2FA with YubiKey using HMAC-SHA1 Challenges
+This is used to do offline 2FA for your user account. This makes use of the same HMAC-SHA1 second factor we're using for FDE, so no extra YubiKey programming is required.
+
+## For standard authentication and sudo
+Start off by installing `yubico-pam`. Then, open up `/etc/pam.d/system-auth` and add the following at the top:
+
+```
+auth [success=1 default=ignore] pam_succeed_if.so quiet user notingroup yubikey
+auth		required	pam_yubico.so mode=challenge-response
+```
+
+Create a group for those who are to auth using their YubiKeys, and add yourself to it:
+```
+sudo groupadd yubikey
+sudo usermod -aG yubikey username
+```
+
+Insert your YubiKey, and run this command to create a "challenge" file in your home directory for that key:
+```
+ykpamcfg -2 -v
+```
+
+You are now set up for standard user auth with YubiKey.
+
+## For i3lock
+
+Create the file `/etc/udev/rules.d/90-yubikey.rules` with the content:
+
+```
+SUBSYSTEMS=="usb", ATTR{product}=="Yubico Yubikey II", MODE="0660", GROUP="yubikey"
+```
+
+Then run `sudo udevadm control --reload` to reload rules. Lock your screen, and you should then be able to unlock with only your YubiKey.
+
 # Customising post-install
 ```bash
 #systemctl enable netctl-ifplugd@enp2s0
