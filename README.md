@@ -99,6 +99,11 @@ sudo groupadd yubikey
 sudo usermod -aG yubikey username
 ```
 
+If you skipped the FDE step above, use the following to program slot 2 of your YubiKey for HMAC-SHA1 auth:
+```
+sudo ykpersonalize -2 -ochal-resp -ochal-hmac -ohmac-lt64 -oserial-api-visible
+```
+
 Insert your YubiKey, and run this command to create a "challenge" file in your home directory for that key:
 ```
 ykpamcfg -2 -v
